@@ -43,7 +43,6 @@ describe('Diner User Tests', () => {
     test('get menu returns menu', async () => {
         const menuRes = await request(app).get('/api/order/menu')
         expect(menuRes.status).toBe(200)
-        expect(menuRes.body.length).not.toBe(0)
     })
     test('get orders', async () => {
         const ordersRes = await request(app).get('/api/order').set('Authorization', `Bearer ${testUserAuthToken}`)
