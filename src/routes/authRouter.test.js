@@ -33,7 +33,11 @@ describe('Diner User Tests', () => {
         expect(loginRes.status).toBe(200);
         expect(loginRes.body.token).toMatch(/^[a-zA-Z0-9\-_]*\.[a-zA-Z0-9\-_]*\.[a-zA-Z0-9\-_]*$/);
         
-        const { password, ...user } = { ...testUser, roles: [{ role: 'diner' }] };
+        let user  = { ...testUser, roles: [{ role: 'diner' }] };
+        user = Object.keys(user).filter(objKey => objKey !== 'password').reduce((newObj, key) => {
+            newObj[key] = user[key]
+            return newObj
+        }, {})
         expect(loginRes.body.user).toMatchObject(user);
     });
     test('get menu returns menu', async () => {
