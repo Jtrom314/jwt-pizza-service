@@ -159,7 +159,7 @@ describe('Admin User Tests', () => {
         const storeObj = {
             name: randomName()
         }
-        const storeRes = await request(app).post(`/api/franchise/${franchiseId}/store`).set('Authorization', `Bearer ${adminAuthToken}`).send(franchiseObj)
+        const storeRes = await request(app).post(`/api/franchise/${franchiseId}/store`).set('Authorization', `Bearer ${adminAuthToken}`).send(storeObj)
         expect(storeRes.status).toBe(200)
     })
 
@@ -174,9 +174,6 @@ describe('Admin User Tests', () => {
         }
         const franchiseRes = await request(app).post('/api/franchise').set('Authorization', `Bearer ${adminAuthToken}`).send(franchiseObj)
         const franchiseId = franchiseRes.body.id
-        const storeObj = {
-            name: randomName()
-        }
         const storeRes = await request(app).post(`/api/franchise/${franchiseId}/store`)
         expect(storeRes.status).not.toBe(200)
     })
@@ -195,7 +192,7 @@ describe('Admin User Tests', () => {
         const storeObj = {
             name: randomName()
         }
-        const storeRes = await request(app).post(`/api/franchise/${franchiseId}/store`).set('Authorization', `Bearer ${adminAuthToken}`).send(franchiseObj)
+        const storeRes = await request(app).post(`/api/franchise/${franchiseId}/store`).set('Authorization', `Bearer ${adminAuthToken}`).send(storeObj)
         const storeId = storeRes.body.id
         const deleteRes = await request(app).delete(`/api/franchise/${franchiseId}/store/${storeId}`).set('Authorization', `Bearer ${adminAuthToken}`)
         expect(deleteRes.status).toBe(200)
