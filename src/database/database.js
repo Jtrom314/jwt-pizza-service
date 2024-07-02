@@ -168,7 +168,6 @@ class DB {
         admin.id = adminUser[0].id;
         admin.name = adminUser[0].name;
       }
-
       const franchiseResult = await this.query(connection, `INSERT INTO franchise (name) VALUES (?)`, [franchise.name]);
       franchise.id = franchiseResult.insertId;
 

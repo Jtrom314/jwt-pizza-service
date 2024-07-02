@@ -72,8 +72,10 @@ describe('Diner User Tests', () => {
 
 describe('Admin User Tests', () => {
     let adminAuthToken
+    let adminEmail
+    let adminUser
     beforeAll(async () => {
-        const adminUser = await createAdminUser();
+        adminUser = await createAdminUser();
         
         // Login as admin user
         const loginRes = await request(app).put('/api/auth').send({
@@ -82,10 +84,11 @@ describe('Admin User Tests', () => {
         });
         expect(loginRes.status).toBe(200)
         adminAuthToken = loginRes.body.token
+        adminEmail = adminUser.email
     })
 
     test('add menu item', async () => {
-        let menuItem = {
+        const menuItem = {
             title: randomName(),
             description: randomName(),
             image: randomName(),
@@ -109,5 +112,108 @@ describe('Admin User Tests', () => {
     
         expect(menuRes.statusCode).toBe(200);
         expect(acutual.title).toBe(menuItem.title);
+    })
+
+    test('create franchise', async () => {
+        const franchiseObj = {
+            admins: [
+                {
+                    email: adminEmail
+                }
+            ],
+            name: randomName()
+        }
+        const franchiseRes = await request(app).post('/api/franchise').set('Authorization', `Bearer ${adminAuthToken}`).send(franchiseObj)
+
+        expect(franchiseRes.statusCode).toBe(200)
+        expect(franchiseRes.body.name).toBe(franchiseObj.name)
+    })
+
+    test('delete franchise', async () => {
+        const franchiseObj = {
+            admins: [
+                {
+                    email: adminEmail
+                }
+            ],
+            name: randomName()
+        }
+        const franchiseRes = await request(app).post('/api/franchise').set('Authorization', `Bearer ${adminAuthToken}`).send(franchiseObj)
+        const franchiseId = franchiseRes.body.id
+        const deleteRes = await request(app).delete(`/api/franchise/${franchiseId}`).set('Authorization', `Bearer ${adminAuthToken}`)
+        expect(deleteRes.status).toBe(200)
+        expect(deleteRes.body.message).toBe("franchise deleted")
+    })
+
+    test('create store in franchise', async () => {
+        const franchiseObj = {
+            admins: [
+                {
+                    email: adminEmail
+                }
+            ],
+            name: randomName()
+        }
+        const franchiseRes = await request(app).post('/api/franchise').set('Authorization', `Bearer ${adminAuthToken}`).send(franchiseObj)
+        const franchiseId = franchiseRes.body.id
+        const storeObj = {
+            name: randomName()
+        }
+        const storeRes = await request(app).post(`/api/franchise/${franchiseId}/store`).set('Authorization', `Bearer ${adminAuthToken}`).send(franchiseObj)
+        expect(storeRes.status).toBe(200)
+    })
+
+    test('create store in franchise UNAUTHORIZED', async () => {
+        const franchiseObj = {
+            admins: [
+                {
+                    email: adminEmail
+                }
+            ],
+            name: randomName()
+        }
+        const franchiseRes = await request(app).post('/api/franchise').set('Authorization', `Bearer ${adminAuthToken}`).send(franchiseObj)
+        const franchiseId = franchiseRes.body.id
+        const storeObj = {
+            name: randomName()
+        }
+        const storeRes = await request(app).post(`/api/franchise/${franchiseId}/store`)
+        expect(storeRes.status).not.toBe(200)
+    })
+
+    test('delete store in franchise', async () => {
+        const franchiseObj = {
+            admins: [
+                {
+                    email: adminEmail
+                }
+            ],
+            name: randomName()
+        }
+        const franchiseRes = await request(app).post('/api/franchise').set('Authorization', `Bearer ${adminAuthToken}`).send(franchiseObj)
+        const franchiseId = franchiseRes.body.id
+        const storeObj = {
+            name: randomName()
+        }
+        const storeRes = await request(app).post(`/api/franchise/${franchiseId}/store`).set('Authorization', `Bearer ${adminAuthToken}`).send(franchiseObj)
+        const storeId = storeRes.body.id
+        const deleteRes = await request(app).delete(`/api/franchise/${franchiseId}/store/${storeId}`).set('Authorization', `Bearer ${adminAuthToken}`)
+        expect(deleteRes.status).toBe(200)
+        expect(deleteRes.body.message).toBe('store deleted')
+    })
+
+    test('get franchise by userid', async () => {
+        const franchiseObj = {
+            admins: [
+                {
+                    email: adminEmail
+                }
+            ],
+            name: randomName()
+        }
+        const franchiseRes = await request(app).post('/api/franchise').set('Authorization', `Bearer ${adminAuthToken}`).send(franchiseObj)
+        const adminId = franchiseRes.body.admins[0].id
+        const franchisedRes = await request(app).get(`/api/franchise/${adminId}`).set('Authorization', `Bearer ${adminAuthToken}`)
+        expect(franchisedRes.status).toBe(200)
     })
 })
