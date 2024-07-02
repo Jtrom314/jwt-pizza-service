@@ -58,7 +58,6 @@ class DB {
   async getUser(email, password) {
     const connection = await this.getConnection();
     try {
-      console.log(connection)
       const userResult = await this.query(connection, ` SELECT * FROM user WHERE email=?`, [email]);
       const user = userResult[0];
       if (!user || !(await bcrypt.compare(password, user.password))) {
@@ -314,7 +313,6 @@ class DB {
     });
     if (setUse) {
       await connection.query(`USE ${config.db.connection.database}`);
-      console.log(`connection to DB made: ${config.db.connection.database}`)
     }
     return connection;
   }
