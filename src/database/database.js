@@ -58,7 +58,8 @@ class DB {
   async getUser(email, password) {
     const connection = await this.getConnection();
     try {
-      const userResult = await this.query(connection, `SELECT * FROM user WHERE email=?`, [email]);
+      console.log(connection)
+      const userResult = await this.query(connection, ` SELECT * FROM user WHERE email=?`, [email]);
       const user = userResult[0];
       if (!user || !(await bcrypt.compare(password, user.password))) {
         throw new StatusCodeError('unknown user', 404);
@@ -313,6 +314,7 @@ class DB {
     });
     if (setUse) {
       await connection.query(`USE ${config.db.connection.database}`);
+      console.log(`connection to DB made: ${config.db.connection.database}`)
     }
     return connection;
   }
