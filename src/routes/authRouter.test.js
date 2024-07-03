@@ -11,10 +11,6 @@ async function createAdminUser() {
     return user;
 }
 
-
-  
-
-
 function randomName() {
     return Math.random().toString(36).substring(2, 12)
 }
@@ -63,6 +59,7 @@ describe('Diner User Tests', () => {
         }
 
         const orderRes = await request(app).post('/api/order').set('Authorization', `Bearer ${testUserAuthToken}`).send(order)
+        console.log(orderRes.body)
         expect(orderRes.status).toBe(200)
     })
     test('get all franchises', async () => {
