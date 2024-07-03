@@ -45,23 +45,6 @@ describe('Diner User Tests', () => {
         expect(ordersRes.status).toBe(200)
         expect(ordersRes.body.orders).toEqual([])
     })
-    test('create order', async () => {
-        const order = {
-            franchiseId: 1,
-            storeId: 1,
-            items: [
-                {
-                    menuId: 1,
-                    description: randomName(),
-                    price: Math.random()
-                }
-            ]
-        }
-
-        const orderRes = await request(app).post('/api/order').set('Authorization', `Bearer ${testUserAuthToken}`).send(order)
-        console.log(orderRes.body)
-        expect(orderRes.status).toBe(200)
-    })
     test('get all franchises', async () => {
         const franchiseRes = await request(app).get('/api/franchise')
         expect(franchiseRes.status).toBe(200)
@@ -129,6 +112,7 @@ describe('Admin User Tests', () => {
         expect(franchiseRes.body.name).toBe(franchiseObj.name)
     })
 
+
     test('delete franchise', async () => {
         const franchiseObj = {
             admins: [
@@ -161,6 +145,39 @@ describe('Admin User Tests', () => {
         }
         const storeRes = await request(app).post(`/api/franchise/${franchiseId}/store`).set('Authorization', `Bearer ${adminAuthToken}`).send(storeObj)
         expect(storeRes.status).toBe(200)
+    })
+
+    test('create order', async () => {
+        const franchiseObj = {
+            admins: [
+                {
+                    email: adminEmail
+                }
+            ],
+            name: randomName()
+        }
+        const franchiseRes = await request(app).post('/api/franchise').set('Authorization', `Bearer ${adminAuthToken}`).send(franchiseObj)
+        const franchiseId = franchiseRes.body.id
+        const storeObj = {
+            name: randomName()
+        }
+        const storeRes = await request(app).post(`/api/franchise/${franchiseId}/store`).set('Authorization', `Bearer ${adminAuthToken}`).send(storeObj)
+        const storeId = storeRes.body.id
+        const order = {
+            franchiseId: franchiseId,
+            storeId: storeId,
+            items: [
+                {
+                    menuId: 1,
+                    description: randomName(),
+                    price: Math.random()
+                }
+            ]
+        }
+
+        const orderRes = await request(app).post('/api/order').set('Authorization', `Bearer ${adminAuthToken}`).send(order)
+        console.log(orderRes.body)
+        expect(orderRes.status).toBe(200)
     })
 
     test('create store in franchise UNAUTHORIZED', async () => {
