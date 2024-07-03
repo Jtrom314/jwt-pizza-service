@@ -176,7 +176,6 @@ describe('Admin User Tests', () => {
         }
 
         const orderRes = await request(app).post('/api/order').set('Authorization', `Bearer ${adminAuthToken}`).send(order)
-        console.log(orderRes.body)
         expect(orderRes.status).toBe(200)
     })
 
