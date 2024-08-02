@@ -96,10 +96,10 @@ jobs:
           id-token: write
         needs: validate
         steps:
-          - name: Download distribution artifact
-              uses: actions/download-artifact@v4
-              with:
-                name: package
+        - name: Download distribution artifact
+          uses: actions/download-artifact@v4
+          with:
+            name: package
 
         - name: Create OIDC token to AWS
           uses: aws-actions/configure-aws-credentials@v4
