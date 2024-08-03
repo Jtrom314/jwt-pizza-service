@@ -64,6 +64,7 @@ jobs:
 
       - name: Update coverage and version
         run: |
+          git pull
           printf '{"version": "%s" }' $(date +'%Y%m%d.%H%M%S') > src/version.json
           coverage_pct=$(grep -o '"pct":[0-9.]*' coverage/coverage-summary.json | head -n 1 | cut -d ':' -f 2)
           color=$(echo "$coverage_pct < 80" | bc -l | awk '{if ($1) print "yellow"; else print "green"}')
@@ -149,5 +150,4 @@ jobs:
           cluster: jwt-pizza-service
           wait-for-service-stability: false
 
- 
  
