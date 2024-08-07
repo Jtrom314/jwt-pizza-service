@@ -3,7 +3,7 @@ const jwt = require('jsonwebtoken');
 const config = require('../config.js');
 const { asyncHandler } = require('../endpointHelper.js');
 const { DB, Role } = require('../database/database.js');
-const metrics = require('../metrics.js')
+const { metrics } = require('../metrics.js')
 
 const authRouter = express.Router();
 
@@ -87,14 +87,15 @@ authRouter.put(
   asyncHandler(async (req, res) => {
     metrics.incrementRequests('PUT')
     try {
+      const { email, password } = req.body
       const user = await DB.getUser(email, password);
       const auth = await setAuth(user);
-      metrics.trackAuthAttempt(true);
+      metrics.trackAuthAttemps(true);
       metrics.addActiveUser(user.id);
       res.json({ user: user, token: auth });
     } catch (error) {
-      metrics.trackAuthAttempt(false);
-      res.status(401).json({ message: 'invalid email or password' });
+      metrics.trackAuthAttemps(false);
+      res.status(401).json({ error, message: 'invalid email or password' });
     }
   })
 );

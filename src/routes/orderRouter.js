@@ -3,7 +3,7 @@ const config = require('../config.js');
 const { Role, DB } = require('../database/database.js');
 const { authRouter } = require('./authRouter.js');
 const { asyncHandler, StatusCodeError } = require('../endpointHelper.js');
-const metrics = require('../metrics.js')
+const { metrics } = require('../metrics.js')
 
 const orderRouter = express.Router();
 
@@ -83,7 +83,6 @@ orderRouter.post(
   asyncHandler(async (req, res) => {
     metrics.incrementRequests('POST')
     const orderReq = req.body;
-    const order = await DB.addDinerOrder(req.user, orderReq);
 
     const startTime = Date.now()
     let success = false

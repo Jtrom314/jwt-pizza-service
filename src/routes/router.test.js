@@ -1,5 +1,7 @@
+jest.mock('../metrics.js');
+
 const request = require('supertest');
-const app = require('../service');
+const app = require('../service.js');
 
 const { Role, DB }  = require('../database/database.js');
 
