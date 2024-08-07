@@ -58,6 +58,7 @@ class MockMetrics {
   
     sendMetrics(metricPrefix, metricName, metricValue) {
       // Mock implementation that does nothing
+      return {metricPrefix, metricName, metricValue}
     }
   }
   
