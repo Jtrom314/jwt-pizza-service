@@ -117,14 +117,14 @@ class Metrics {
             },
         })
             .then((res) => {
-                if (!res.status === 200) {
-                    // console.error('Failed');
+                if (!res.ok) {
+                    console.error('Failed');
                 } else {
                     // console.log(`Pushed ${metric}`);
                 }
             })
             .catch((error) => {
-                // console.error('Error pushing metric: ', error);
+                console.error('Error pushing metric: ', error);
             });
     }
 }
