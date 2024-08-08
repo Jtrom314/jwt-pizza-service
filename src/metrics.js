@@ -106,8 +106,14 @@ class Metrics {
         return memoryUsage.toFixed(2);
     }
 
-    sendMetrics(metricPrefix, httpMethod, metricName, metricValue) {
-        const metric = `${metricPrefix},source=${config.source},method=${httpMethod} ${metricName}=${metricValue}`;
+    nowString() {
+        return (Math.floor(Date.now()) * 1000000).toString();
+      }
+
+    sendMetrics(metricPrefix, metricName, metricValue) {
+        const metric = `${metricPrefix},source=${config.metrics.source} ${metricName}=${metricValue} ${this.nowString()}`;
+        // console.table({PREFIX: metricPrefix, NAME: metricName, VALUE: metricValue})
+        // console.table({URL: config.metrics.url, UserID: config.metrics.userId, APIKEY: config.metrics.apiKey})
 
         fetch(`${config.metrics.url}`, {
             method: 'POST',
@@ -120,7 +126,7 @@ class Metrics {
                 if (!res.ok) {
                     console.error('Failed');
                 } else {
-                    // console.log(`Pushed ${metric}`);
+                    console.log(`Pushed ${metric}`);
                 }
             })
             .catch((error) => {
