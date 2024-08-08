@@ -1,140 +1,133 @@
 const config = require('./config.js');
-const os = require('os')
+const os = require('os');
 
 class Metrics {
     constructor() {
-        /**
-         * Metrics needed:
-         * 
-         * 1. HTTP requests by method/minute                ✔
-         * 2. Active Users                                  ✔
-         * 3. Authetiication attempts/minute                ✔
-         *      i. Successful                               ✔
-         *      ii. Failed                                  ✔
-         * 4. CPU usage percentage                          ✔
-         * 5. Memory usage percentage                       ✔
-         * 6. Pizzas                                        ✔
-         *      i. Sold/minute                              ✔
-         *      ii. Revenue/minute                          ✔
-         *      iii. Creation latency                       ✔
-         *      iv. Creation failures                       ✔
-         */
-        this.totalRequests = 0
+        this.totalRequests = 0;
         this.methods = {
             GET: 0,
             POST: 0,
             DELETE: 0,
-            PUT: 0
-        }
+            PUT: 0,
+        };
         this.pizzaData = {
             numSold: 0,
             totalRevenue: 0,
             creationLatency: [],
-            creationFailures: 0
-        }
-        this.authAttemps = {
+            creationFailures: 0,
+        };
+        this.authAttempts = {
             successful: 0,
-            failed: 0
-        }
-        this.activeUsers = new Set()
-
-        const timer = setInterval(() => {
-            this.sendMetrics('osMetric', 'cpu_percentage', this.getCpuUsagePercentage())
-            this.sendMetrics('osMetric', 'memory_percentage', this.getMemoryUsagePercentage())
-
-            this.sendMetrics('httpMetric', 'all_http_methods', this.totalRequests)
-            this.sendMetrics('httpMetric', 'get_http_method', this.methods.GET)
-            this.sendMetrics('httpMetric', 'post_http_method', this.methods.POST),
-            this.sendMetrics('httpMetric', 'delete_http_method', this.methods.DELETE)
-            this.sendMetrics('httpMetric', 'put_http_method', this.methods.PUT)
-
-            this.sendMetrics('pizzaMetric', 'pizza_sold', this.pizzaData.numSold)
-            this.sendMetrics('pizzaMetric', 'pizza_revenue', this.pizzaData.totalRevenue)
-            this.sendMetrics('pizzaMetric', 'pizza_avg_latency', this.getAveragePizzaCreationLatency())
-            this.sendMetrics('pizzaMetric', 'pizza_creation_failures', this.pizzaData.creationFailures)
-
-            this.sendMetrics('authMetric', 'auth_success', this.authAttemps.successful)
-            this.sendMetrics('authMetric', 'auth_failed', this.authAttemps.failed)
-
-            this.sendMetrics('userMetric', 'active_users', this.activeUsers.size)
-        , 10000})
-
-        timer.unref()
+            failed: 0,
+        };
+        this.activeUsers = new Set();
     }
-    trackAuthAttemps(success) {
+
+    sendMetricsPeriodically (rate) {
+        this.intervalId = setInterval(() => {
+            console.log('called');
+            this.sendMetrics('osMetric', 'cpu_percentage', this.getCpuUsagePercentage());
+            this.sendMetrics('osMetric', 'memory_percentage', this.getMemoryUsagePercentage());
+
+            this.sendMetrics('httpMetric', 'all_http_methods', this.totalRequests);
+            this.sendMetrics('httpMetric', 'get_http_method', this.methods.GET);
+            this.sendMetrics('httpMetric', 'post_http_method', this.methods.POST);
+            this.sendMetrics('httpMetric', 'delete_http_method', this.methods.DELETE);
+            this.sendMetrics('httpMetric', 'put_http_method', this.methods.PUT);
+
+            this.sendMetrics('pizzaMetric', 'pizza_sold', this.pizzaData.numSold);
+            this.sendMetrics('pizzaMetric', 'pizza_revenue', this.pizzaData.totalRevenue);
+            this.sendMetrics('pizzaMetric', 'pizza_avg_latency', this.getAveragePizzaCreationLatency());
+            this.sendMetrics('pizzaMetric', 'pizza_creation_failures', this.pizzaData.creationFailures);
+
+            this.sendMetrics('authMetric', 'auth_success', this.authAttempts.successful);
+            this.sendMetrics('authMetric', 'auth_failed', this.authAttempts.failed);
+
+            this.sendMetrics('userMetric', 'active_users', this.activeUsers.size);
+        }, rate);
+    }
+
+    requestTracker(req, res, next) {
+        this.incrementRequests(req.method)
+        next()
+    }
+
+    trackAuthAttempts(success) {
         if (success) {
-            this.authAttemps.successful++
+            this.authAttempts.successful++;
         } else {
-            this.authAttemps.failed++
+            this.authAttempts.failed++;
         }
     }
 
     addActiveUser(userId) {
-        this.activeUsers.add(userId)
+        this.activeUsers.add(userId);
     }
 
     removeActiveUser(userId) {
-        this.activeUsers.delete(userId)
+        this.activeUsers.delete(userId);
     }
 
     incrementRequests(method) {
-        this.totalRequests ++
+        this.totalRequests++;
         if (this.methods[method] !== undefined) {
             this.methods[method]++;
-          }
+        }
     }
 
     trackPizzaSale(price, latency, success) {
-        this.pizzaData.numSold ++
-        this.pizzaData.totalRevenue += price
+        this.pizzaData.numSold++;
+        this.pizzaData.totalRevenue += price;
         if (latency !== null) {
-            this.pizzaData.creationLatency.push(latency)
+            this.pizzaData.creationLatency.push(latency);
         }
         if (!success) {
-            this.pizzaData.creationFailures++
+            this.pizzaData.creationFailures++;
         }
     }
 
     getAveragePizzaCreationLatency() {
-        const totalLatency = this.pizzaData.creationLatency = this.creationLatency.reduce((acc, val) => acc + val, 0)
-        return this.pizzaData.creationLatency.length ? (totalLatency / this.pizzaData.creationLatency.length).toFixed(2) : 0
+        const totalLatency = this.pizzaData.creationLatency.reduce((acc, val) => acc + val, 0);
+        return this.pizzaData.creationLatency.length
+            ? (totalLatency / this.pizzaData.creationLatency.length).toFixed(2)
+            : 0;
     }
 
     getCpuUsagePercentage() {
-        const cpuUsage = os.loadavg()[0] / os.cpus().length
-        return cpuUsage.toFixed(2) * 100
+        const cpuUsage = os.loadavg()[0] / os.cpus().length;
+        return (cpuUsage * 100).toFixed(2);
     }
 
     getMemoryUsagePercentage() {
-        const totalMemory = os.totalmem()
-        const freeMemory = os.freemem()
-        const usedMemory = totalMemory - freeMemory
-        const memoryUsage = (usedMemory / totalMemory) * 100
-        return memoryUsage.toFixed(2)
+        const totalMemory = os.totalmem();
+        const freeMemory = os.freemem();
+        const usedMemory = totalMemory - freeMemory;
+        const memoryUsage = (usedMemory / totalMemory) * 100;
+        return memoryUsage.toFixed(2);
     }
 
     sendMetrics(metricPrefix, httpMethod, metricName, metricValue) {
-        const metric = `${metricPrefix},source=${config.source},method=${httpMethod} ${metricName}=${metricValue}`
+        const metric = `${metricPrefix},source=${config.source},method=${httpMethod} ${metricName}=${metricValue}`;
 
-        fetch(`${config.url}`, {
+        fetch(`${config.metrics.url}`, {
             method: 'POST',
             body: metric,
             headers: {
-                Authorization: `Bearer ${config.userId}:${config.apiKey}`
-            }
+                Authorization: `Bearer ${config.metrics.userId}:${config.metrics.apiKey}`,
+            },
         })
             .then((res) => {
-                if (!res.ok) {
-                    console.error('Failed')
+                if (!res.status === 200) {
+                    // console.error('Failed');
                 } else {
-                    console.log(`Pushed ${metric}`)
+                    // console.log(`Pushed ${metric}`);
                 }
             })
             .catch((error) => {
-                console.error('Error pusshing metric: ', error)
-            })
+                // console.error('Error pushing metric: ', error);
+            });
     }
 }
 
-const metrics = new Metrics()
-module.exports = metrics
+const metrics = new Metrics();
+module.exports = metrics;

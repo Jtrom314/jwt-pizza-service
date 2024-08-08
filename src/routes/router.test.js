@@ -1,15 +1,15 @@
-jest.mock('../metrics.js');
-
 const request = require('supertest');
 const app = require('../service.js');
-
 const { Role, DB }  = require('../database/database.js');
+const metrics = require('../metrics.js')
+const config = require('../config.js')
 
 async function createAdminUser() {
     let user = { password: 'toomanysecrets', roles: [{ role: Role.Admin }] };
     user.name = randomName();
     user.email = user.name + '@admin.com';
-    await DB.addUser(user);
+    const res = await DB.addUser(user);
+    user.id = res.id
     return user;
 }
 
@@ -21,10 +21,11 @@ describe('Diner User Tests', () => {
     let testUserAuthToken;
 
     beforeAll(async () => {
-      testUser.email = Math.random().toString(36).substring(2, 12) + '@test.com';
-      const registerRes = await request(app).post('/api/auth').send(testUser);
-      testUserAuthToken = registerRes.body.token;
+        testUser.email = Math.random().toString(36).substring(2, 12) + '@test.com';
+        const registerRes = await request(app).post('/api/auth').send(testUser);
+        testUserAuthToken = registerRes.body.token;
     });
+    
     
     test('login', async () => {
         const loginRes = await request(app).put('/api/auth').send(testUser);
@@ -70,6 +71,15 @@ describe('Admin User Tests', () => {
         expect(loginRes.status).toBe(200)
         adminAuthToken = loginRes.body.token
         adminEmail = adminUser.email
+    })
+
+    test('update user', async () => {
+        const updatedUser = {
+            email: adminEmail,
+            password: 'moarSecrets',
+        }
+        const updateRequest = await request(app).put(`/api/auth/${adminUser.id}`).set('Authorization', `Bearer ${adminAuthToken}`).send(updatedUser)
+        expect(updateRequest.status).toBe(200)
     })
 
     test('add menu item', async () => {
@@ -232,3 +242,135 @@ describe('Admin User Tests', () => {
         expect(franchisedRes.status).toBe(200)
     })
 })
+
+describe('Metric Tests', () => {
+
+    beforeAll(() => {
+        jest.useFakeTimers(); 
+    });
+
+    beforeEach(() => {
+
+        metrics.totalRequests = 0;
+        metrics.methods = {
+            GET: 0,
+            POST: 0,
+            DELETE: 0,
+            PUT: 0,
+        };
+        metrics.pizzaData = {
+            numSold: 0,
+            totalRevenue: 0,
+            creationLatency: [],
+            creationFailures: 0,
+        };
+        metrics.authAttempts = {
+            successful: 0,
+            failed: 0,
+        };
+        metrics.activeUsers = new Set();
+
+        global.fetch = jest.fn();
+    });
+
+    test('trackAuthAttemps should increment correctly', () => {
+        metrics.trackAuthAttempts(true);
+        metrics.trackAuthAttempts(false);
+
+        expect(metrics.authAttempts.successful).toBe(1);
+        expect(metrics.authAttempts.failed).toBe(1);
+    });
+
+    test('addActiveUser and removeActiveUser adds and removes user', () => {
+        metrics.addActiveUser(1);
+
+        expect(metrics.activeUsers.size).toBe(1);
+
+        metrics.removeActiveUser(1);
+
+        expect(metrics.activeUsers.size).toBe(0);
+    });
+
+    test('incrementRequests increments successfuly', () => {
+        metrics.incrementRequests('GET');
+
+        expect(metrics.totalRequests).toBe(1);
+        expect(metrics.methods.GET).toBe(1);
+    });
+
+    test('trackPizzaSale handles correctly', () => {
+        metrics.trackPizzaSale(10, null, true);
+        
+        expect(metrics.pizzaData.numSold).toBe(1);
+        expect(metrics.pizzaData.totalRevenue).toBe(10);
+        expect(metrics.pizzaData.creationLatency.length).toBe(0);
+        expect(metrics.pizzaData.creationFailures).toBe(0);
+
+        metrics.trackPizzaSale(10, 0.1, false);
+
+        expect(metrics.pizzaData.numSold).toBe(2);
+        expect(metrics.pizzaData.totalRevenue).toBe(20);
+        expect(metrics.pizzaData.creationLatency.length).toBe(1);
+        expect(metrics.pizzaData.creationFailures).toBe(1);
+    });
+
+    test('getAveragePizzaCreationLatency gives correct average', () => {
+        metrics.pizzaData.creationLatency = [];
+        expect(metrics.getAveragePizzaCreationLatency()).toBe(0);
+
+        metrics.trackPizzaSale(10, 0.1, false);
+
+        expect(metrics.getAveragePizzaCreationLatency()).toBe('0.10');
+    });
+
+    test('getCpuUsagePercentageIsNotNull', () => {
+        const cpuUsagePercentage = metrics.getCpuUsagePercentage();
+        expect(cpuUsagePercentage).not.toBeNull();
+    });
+
+    test('getMemoryUsagePercentageIsNotNull', () => {
+        const memoryUsage = metrics.getMemoryUsagePercentage();
+        expect(memoryUsage).not.toBeNull();
+    });
+
+    test('fetch should send metrics', async () => {
+        const metricPrefix = 'httpMetric';
+        const httpMethod = 'GET';
+        const metricName = 'total_requests';
+        const metricValue = 100;
+
+        global.fetch.mockResolvedValue({ status: 200 });
+
+        await metrics.sendMetrics(metricPrefix, httpMethod, metricName, metricValue);
+
+        const expectedBody = `${metricPrefix},source=${config.source},method=${httpMethod} ${metricName}=${metricValue}`;
+        const expectedUrl = `${config.metrics.url}`;
+        const expectedHeaders = {
+            Authorization: `Bearer ${config.metrics.userId}:${config.metrics.apiKey}`,
+        };
+
+        expect(global.fetch).toHaveBeenCalledWith(expectedUrl, {
+            method: 'POST',
+            body: expectedBody,
+            headers: expectedHeaders,
+        });
+    });
+
+    test('fetch should handle errors', async () => {
+        global.fetch.mockRejectedValue(new Error('Network Error'));
+
+        const metricPrefix = 'httpMetric';
+        const httpMethod = 'GET';
+        const metricName = 'total_requests';
+        const metricValue = 100;
+
+        await metrics.sendMetrics(metricPrefix, httpMethod, metricName, metricValue);
+
+        expect(global.fetch).toHaveBeenCalled();
+    });
+
+    afterEach(() => {
+        global.fetch.mockRestore();
+        jest.clearAllTimers(); // Clear all timers
+    });
+});

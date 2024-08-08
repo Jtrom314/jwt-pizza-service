@@ -303,8 +303,6 @@ class DB {
   }
 
   async _getConnection(setUse = true) {
-    console.table(config.db)
-    console.log(JSON.stringify(config.db))
     const connection = await mysql.createConnection({
       host: config.db.connection.host,
       user: config.db.connection.user,

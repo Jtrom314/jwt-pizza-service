@@ -3,7 +3,8 @@ const jwt = require('jsonwebtoken');
 const config = require('../config.js');
 const { asyncHandler } = require('../endpointHelper.js');
 const { DB, Role } = require('../database/database.js');
-const { metrics } = require('../metrics.js')
+const  metrics  = require('../metrics.js')
+
 
 const authRouter = express.Router();
 
@@ -68,14 +69,13 @@ authRouter.authenticateToken = (req, res, next) => {
 authRouter.post(
   '/',
   asyncHandler(async (req, res) => {
-    metrics.incrementRequests('POST')
     const { name, email, password } = req.body;
     if (!name || !email || !password) {
       return res.status(400).json({ message: 'name, email, and password are required' });
     }
     const user = await DB.addUser({ name, email, password, roles: [{ role: Role.Diner }] });
     const auth = await setAuth(user);
-    metrics.trackAuthAttemps(true)
+    metrics.trackAuthAttempts(true)
     metrics.addActiveUser(user.id)
     res.json({ user: user, token: auth });
   })
@@ -85,16 +85,15 @@ authRouter.post(
 authRouter.put(
   '/',
   asyncHandler(async (req, res) => {
-    metrics.incrementRequests('PUT')
     try {
       const { email, password } = req.body
       const user = await DB.getUser(email, password);
       const auth = await setAuth(user);
-      metrics.trackAuthAttemps(true);
+      metrics.trackAuthAttempts(true);
       metrics.addActiveUser(user.id);
       res.json({ user: user, token: auth });
     } catch (error) {
-      metrics.trackAuthAttemps(false);
+      metrics.trackAuthAttempts(false);
       res.status(401).json({ error, message: 'invalid email or password' });
     }
   })
@@ -105,7 +104,6 @@ authRouter.delete(
   '/',
   authRouter.authenticateToken,
   asyncHandler(async (req, res) => {
-    metrics.incrementRequests('DELETE')
     clearAuth(req);
     metrics.removeActiveUser(req.user.id)
     res.json({ message: 'logout successful' });
@@ -117,14 +115,12 @@ authRouter.put(
   '/:userId',
   authRouter.authenticateToken,
   asyncHandler(async (req, res) => {
-    metrics.incrementRequests('PUT')
     const { email, password } = req.body;
     const userId = Number(req.params.userId);
     const user = req.user;
     if (user.id !== userId && !user.isRole(Role.Admin)) {
       return res.status(403).json({ message: 'unauthorized' });
     }
-
     const updatedUser = await DB.updateUser(userId, email, password);
     res.json(updatedUser);
   })
