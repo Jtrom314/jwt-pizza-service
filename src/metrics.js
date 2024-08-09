@@ -47,12 +47,8 @@ class Metrics {
         }, rate);
     }
 
-    requestTracker(req, res, next) {
-        this.incrementRequests(req.method)
-        next()
-    }
-
     trackAuthAttempts(success) {
+        console.log('THERE')
         if (success) {
             this.authAttempts.successful++;
         } else {
@@ -115,6 +111,7 @@ class Metrics {
         // console.table({PREFIX: metricPrefix, NAME: metricName, VALUE: metricValue})
         // console.table({URL: config.metrics.url, UserID: config.metrics.userId, APIKEY: config.metrics.apiKey})
 
+        console.log(metric)
         fetch(`${config.metrics.url}`, {
             method: 'POST',
             body: metric,
@@ -126,7 +123,7 @@ class Metrics {
                 if (!res.ok) {
                     console.error('Failed');
                 } else {
-                    console.log(`Pushed ${metric}`);
+                    // console.log(`Pushed ${metric}`);
                 }
             })
             .catch((error) => {

@@ -69,6 +69,7 @@ authRouter.authenticateToken = (req, res, next) => {
 authRouter.post(
   '/',
   asyncHandler(async (req, res) => {
+    metrics.incrementRequests("POST")
     const { name, email, password } = req.body;
     if (!name || !email || !password) {
       return res.status(400).json({ message: 'name, email, and password are required' });
@@ -85,6 +86,7 @@ authRouter.post(
 authRouter.put(
   '/',
   asyncHandler(async (req, res) => {
+    metrics.incrementRequests("PUT")
     try {
       const { email, password } = req.body
       const user = await DB.getUser(email, password);
@@ -104,6 +106,7 @@ authRouter.delete(
   '/',
   authRouter.authenticateToken,
   asyncHandler(async (req, res) => {
+    metrics.incrementRequests("DELETE")
     clearAuth(req);
     metrics.removeActiveUser(req.user.id)
     res.json({ message: 'logout successful' });
@@ -115,6 +118,7 @@ authRouter.put(
   '/:userId',
   authRouter.authenticateToken,
   asyncHandler(async (req, res) => {
+    metrics.incrementRequests("PUT")
     const { email, password } = req.body;
     const userId = Number(req.params.userId);
     const user = req.user;
