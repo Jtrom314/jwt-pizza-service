@@ -25,7 +25,6 @@ class Metrics {
 
     sendMetricsPeriodically (rate) {
         this.intervalId = setInterval(() => {
-            console.log('called');
             this.sendMetrics('osMetric', 'cpu_percentage', this.getCpuUsagePercentage());
             this.sendMetrics('osMetric', 'memory_percentage', this.getMemoryUsagePercentage());
 
@@ -48,7 +47,6 @@ class Metrics {
     }
 
     trackAuthAttempts(success) {
-        console.log('THERE')
         if (success) {
             this.authAttempts.successful++;
         } else {
@@ -112,6 +110,7 @@ class Metrics {
         // console.table({URL: config.metrics.url, UserID: config.metrics.userId, APIKEY: config.metrics.apiKey})
 
         console.log(metric)
+
         fetch(`${config.metrics.url}`, {
             method: 'POST',
             body: metric,
