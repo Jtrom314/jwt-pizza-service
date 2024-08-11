@@ -109,7 +109,7 @@ class Metrics {
         // console.table({PREFIX: metricPrefix, NAME: metricName, VALUE: metricValue})
         // console.table({URL: config.metrics.url, UserID: config.metrics.userId, APIKEY: config.metrics.apiKey})
 
-        console.log(metric)
+        // console.log(metric)
 
         fetch(`${config.metrics.url}`, {
             method: 'POST',

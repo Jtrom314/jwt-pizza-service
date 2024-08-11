@@ -3,7 +3,8 @@ const config = require('../config.js');
 const { Role, DB } = require('../database/database.js');
 const { authRouter } = require('./authRouter.js');
 const { asyncHandler, StatusCodeError } = require('../endpointHelper.js');
-const  metrics  = require('../metrics.js')
+const metrics = require('../metrics.js')
+const Logger = require('../logger.js')
 
 const orderRouter = express.Router();
 
@@ -46,6 +47,7 @@ orderRouter.get(
   '/menu',
   asyncHandler(async (req, res) => {
     metrics.incrementRequests("GET")
+    Logger.httpLogger(req, res)
     res.send(await DB.getMenu());
   })
 );
@@ -56,6 +58,7 @@ orderRouter.put(
   authRouter.authenticateToken,
   asyncHandler(async (req, res) => {
     metrics.incrementRequests("PUT")
+    Logger.httpLogger(req, res)
     if (!req.user.isRole(Role.Admin)) {
       throw new StatusCodeError('unable to add menu item', 403);
     }
@@ -72,6 +75,7 @@ orderRouter.get(
   authRouter.authenticateToken,
   asyncHandler(async (req, res) => {
     metrics.incrementRequests("GET")
+    Logger.httpLogger(req, res)
     res.json(await DB.getOrders(req.user, req.query.page));
   })
 );
@@ -82,6 +86,7 @@ orderRouter.post(
   authRouter.authenticateToken,
   asyncHandler(async (req, res) => {
     metrics.incrementRequests("POST")
+    // Logger.httpLogger(req, res)
     const orderReq = req.body;
 
     const startTime = Date.now()
@@ -90,19 +95,22 @@ orderRouter.post(
     try {
       const order = await DB.addDinerOrder(req.user, orderReq);
       const r = await fetch(`${config.factory.url}/api/order`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', authorization: `Bearer ${config.factory.apiKey}` },
-          body: JSON.stringify({ diner: { id: req.user.id, name: req.user.name, email: req.user.email }, order }),
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', authorization: `Bearer ${config.factory.apiKey}` },
+        body: JSON.stringify({ diner: { id: req.user.id, name: req.user.name, email: req.user.email }, order }),
       });
       const j = await r.json();
       if (r.ok) {
-          success = true;
-          res.send({ order, jwt: j.jwt, reportUrl: j.reportUrl });
+        // Logger.factoryLogger({ order, response: j })
+        success = true;
+        res.send({ order, jwt: j.jwt, reportUrl: j.reportUrl });
       } else {
-          res.status(500).send({ message: 'Failed to fulfill order at factory', reportUrl: j.reportUrl });
+        // Logger.exceptionLogger({ route: 'createOrder', message: 'Failed to fulfill order at factory', reportUrl: j.reportUrl })
+        res.status(500).send({ message: 'Failed to fulfill order at factory', reportUrl: j.reportUrl });
       }
     } catch (error) {
       console.error(error);
+      // Logger.exceptionLogger({ route: 'createOrder', message: 'Failed to create order' })
       res.status(500).send({ message: 'Failed to create order' });
     } finally {
       const endTime = Date.now();

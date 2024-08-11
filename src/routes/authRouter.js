@@ -3,7 +3,8 @@ const jwt = require('jsonwebtoken');
 const config = require('../config.js');
 const { asyncHandler } = require('../endpointHelper.js');
 const { DB, Role } = require('../database/database.js');
-const  metrics  = require('../metrics.js')
+const metrics = require('../metrics.js')
+const Logger = require('../logger.js')
 
 
 const authRouter = express.Router();
@@ -70,6 +71,7 @@ authRouter.post(
   '/',
   asyncHandler(async (req, res) => {
     metrics.incrementRequests("POST")
+    Logger.httpLogger(req, res)
     const { name, email, password } = req.body;
     if (!name || !email || !password) {
       return res.status(400).json({ message: 'name, email, and password are required' });
@@ -87,6 +89,7 @@ authRouter.put(
   '/',
   asyncHandler(async (req, res) => {
     metrics.incrementRequests("PUT")
+    Logger.httpLogger(req, res)
     try {
       const { email, password } = req.body
       const user = await DB.getUser(email, password);
@@ -107,6 +110,7 @@ authRouter.delete(
   authRouter.authenticateToken,
   asyncHandler(async (req, res) => {
     metrics.incrementRequests("DELETE")
+    Logger.httpLogger(req, res)
     clearAuth(req);
     metrics.removeActiveUser(req.user.id)
     res.json({ message: 'logout successful' });
@@ -119,6 +123,7 @@ authRouter.put(
   authRouter.authenticateToken,
   asyncHandler(async (req, res) => {
     metrics.incrementRequests("PUT")
+    Logger.httpLogger(req, res)
     const { email, password } = req.body;
     const userId = Number(req.params.userId);
     const user = req.user;

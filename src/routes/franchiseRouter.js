@@ -2,7 +2,8 @@ const express = require('express');
 const { DB, Role } = require('../database/database.js');
 const { authRouter } = require('./authRouter.js');
 const { StatusCodeError, asyncHandler } = require('../endpointHelper.js');
-const  metrics = require('../metrics.js');
+const metrics = require('../metrics.js');
+const Logger = require('../logger.js')
 
 
 const franchiseRouter = express.Router();
@@ -62,6 +63,7 @@ franchiseRouter.get(
   '/',
   asyncHandler(async (req, res) => {
     metrics.incrementRequests("GET")
+    Logger.httpLogger(req, res)
     res.json(await DB.getFranchises(req.user));
   })
 );
@@ -72,6 +74,7 @@ franchiseRouter.get(
   authRouter.authenticateToken,
   asyncHandler(async (req, res) => {
     metrics.incrementRequests("GET")
+    Logger.httpLogger(req, res)
     let result = [];
     const userId = Number(req.params.userId);
     if (req.user.id === userId || req.user.isRole(Role.Admin)) {
@@ -88,6 +91,7 @@ franchiseRouter.post(
   authRouter.authenticateToken,
   asyncHandler(async (req, res) => {
     metrics.incrementRequests("POST")
+    Logger.httpLogger(req, res)
     if (!req.user.isRole(Role.Admin)) {
       throw new StatusCodeError('unable to create a franchise', 403);
     }
@@ -118,6 +122,7 @@ franchiseRouter.post(
   authRouter.authenticateToken,
   asyncHandler(async (req, res) => {
     metrics.incrementRequests("POST")
+    Logger.httpLogger(req, res)
     const franchiseId = Number(req.params.franchiseId);
     const franchise = await DB.getFranchise({ id: franchiseId });
     if (!franchise || (!req.user.isRole(Role.Admin) && !franchise.admins.some((admin) => admin.id === req.user.id))) {
@@ -134,6 +139,7 @@ franchiseRouter.delete(
   authRouter.authenticateToken,
   asyncHandler(async (req, res) => {
     metrics.incrementRequests("DELETE")
+    Logger.httpLogger(req, res)
     const franchiseId = Number(req.params.franchiseId);
     const franchise = await DB.getFranchise({ id: franchiseId });
     if (!franchise || (!req.user.isRole(Role.Admin) && !franchise.admins.some((admin) => admin.id === req.user.id))) {
