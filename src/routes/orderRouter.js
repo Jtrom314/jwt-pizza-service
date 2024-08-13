@@ -86,7 +86,7 @@ orderRouter.post(
   authRouter.authenticateToken,
   asyncHandler(async (req, res) => {
     metrics.incrementRequests("POST")
-    // Logger.httpLogger(req, res)
+    Logger.httpLogger(req, res)
     const orderReq = req.body;
 
     const startTime = Date.now()
@@ -101,16 +101,16 @@ orderRouter.post(
       });
       const j = await r.json();
       if (r.ok) {
-        // Logger.factoryLogger({ order, response: j })
+        Logger.factoryLogger({ order, response: j })
         success = true;
         res.send({ order, jwt: j.jwt, reportUrl: j.reportUrl });
       } else {
-        // Logger.exceptionLogger({ route: 'createOrder', message: 'Failed to fulfill order at factory', reportUrl: j.reportUrl })
+        Logger.exceptionLogger({ route: 'createOrder', message: 'Failed to fulfill order at factory', reportUrl: j.reportUrl })
         res.status(500).send({ message: 'Failed to fulfill order at factory', reportUrl: j.reportUrl });
       }
     } catch (error) {
       console.error(error);
-      // Logger.exceptionLogger({ route: 'createOrder', message: 'Failed to create order' })
+      Logger.exceptionLogger({ route: 'createOrder', message: 'Failed to create order' })
       res.status(500).send({ message: 'Failed to create order' });
     } finally {
       const endTime = Date.now();
