@@ -11,6 +11,11 @@ const authRouter = express.Router();
 
 authRouter.endpoints = [
   {
+    method: 'PUT',
+    path: '/chaos/:state',
+    response: { chaos: true }
+  },
+  {
     method: 'POST',
     path: '/api/auth',
     description: 'Register a new user',
@@ -66,14 +71,52 @@ authRouter.authenticateToken = (req, res, next) => {
   next();
 };
 
+let enableChaos = false
+let chaosTarget = 0
+let chaosStart = 0
+
+const chaos = (req, res) => {
+  if (!enableChaos) return
+  if (chaosStart >= chaosTarget) {
+    Logger.exceptionLogger({ path: req.path, message: 'CHAOS!'})
+    res.status(451).json({message: 'CHAOS!'})
+    enableChaos = false
+  } else {
+    chaosStart++
+  }
+}
+
+
+
+authRouter.put(
+  '/chaos/:state',
+  authRouter.authenticateToken,
+  asyncHandler(async (req, res) => {
+    if (!req.user.isRole(Role.Admin)) {
+      res.status(404)
+    }
+
+    enableChaos = (req.params.state === 'true');
+    if (enableChaos) {
+      chaosStart = 0
+      chaosTarget = Math.floor(Math.random() * 101) + 50
+    } else {
+      chaosStart = 0
+    }
+    res.json({ chaos: enableChaos });
+  })
+);
+
 // register
 authRouter.post(
   '/',
   asyncHandler(async (req, res) => {
     metrics.incrementRequests("POST")
     Logger.httpLogger(req, res)
+    chaos(req, res)
     const { name, email, password } = req.body;
     if (!name || !email || !password) {
+      Logger.exceptionLogger({ route: 'register', message: 'name, email, and password are required'})
       return res.status(400).json({ message: 'name, email, and password are required' });
     }
     const user = await DB.addUser({ name, email, password, roles: [{ role: Role.Diner }] });
@@ -90,6 +133,7 @@ authRouter.put(
   asyncHandler(async (req, res) => {
     metrics.incrementRequests("PUT")
     Logger.httpLogger(req, res)
+    chaos(req, res)
     try {
       const { email, password } = req.body
       const user = await DB.getUser(email, password);
@@ -99,6 +143,7 @@ authRouter.put(
       res.json({ user: user, token: auth });
     } catch (error) {
       metrics.trackAuthAttempts(false);
+      Logger.exceptionLogger({ route: 'login', message: 'invalid email or password'})
       res.status(401).json({ error, message: 'invalid email or password' });
     }
   })
@@ -111,6 +156,7 @@ authRouter.delete(
   asyncHandler(async (req, res) => {
     metrics.incrementRequests("DELETE")
     Logger.httpLogger(req, res)
+    chaos(req, res)
     clearAuth(req);
     metrics.removeActiveUser(req.user.id)
     res.json({ message: 'logout successful' });
@@ -124,10 +170,12 @@ authRouter.put(
   asyncHandler(async (req, res) => {
     metrics.incrementRequests("PUT")
     Logger.httpLogger(req, res)
+    chaos(req, res)
     const { email, password } = req.body;
     const userId = Number(req.params.userId);
     const user = req.user;
     if (user.id !== userId && !user.isRole(Role.Admin)) {
+      Logger.exceptionLogger({route: 'updateUser', message: 'unauthorized'})
       return res.status(403).json({ message: 'unauthorized' });
     }
     const updatedUser = await DB.updateUser(userId, email, password);
