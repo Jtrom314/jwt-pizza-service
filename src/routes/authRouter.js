@@ -93,7 +93,7 @@ authRouter.put(
   authRouter.authenticateToken,
   asyncHandler(async (req, res) => {
     if (!req.user.isRole(Role.Admin)) {
-      res.status(404)
+      res.status(404).json({message: 'C'})
     }
 
     enableChaos = (req.params.state === 'true');
