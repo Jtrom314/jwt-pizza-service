@@ -21,7 +21,7 @@ class Logger {
     statusLevels = {
         info: 'info',
         warn: 'warn',
-        error: 'error'
+        error: 'error',
     }
 
     logTypes = {

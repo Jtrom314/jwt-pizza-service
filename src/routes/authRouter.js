@@ -72,20 +72,6 @@ authRouter.authenticateToken = (req, res, next) => {
 };
 
 let enableChaos = false
-let chaosTarget = 0
-let chaosStart = 0
-
-const chaos = (req, res) => {
-  if (!enableChaos) return
-  if (chaosStart >= chaosTarget) {
-    Logger.exceptionLogger({ path: req.path, message: 'CHAOS!'})
-    res.status(451).json({message: 'CHAOS!'})
-    enableChaos = false
-  } else {
-    chaosStart++
-  }
-}
-
 
 
 authRouter.put(
@@ -95,14 +81,7 @@ authRouter.put(
     if (!req.user.isRole(Role.Admin)) {
       res.status(404).json({message: 'C'})
     }
-
     enableChaos = (req.params.state === 'true');
-    if (enableChaos) {
-      chaosStart = 0
-      chaosTarget = Math.floor(Math.random() * 101) + 50
-    } else {
-      chaosStart = 0
-    }
     res.json({ chaos: enableChaos });
   })
 );
@@ -113,10 +92,10 @@ authRouter.post(
   asyncHandler(async (req, res) => {
     metrics.incrementRequests("POST")
     Logger.httpLogger(req, res)
-    chaos(req, res)
     const { name, email, password } = req.body;
     if (!name || !email || !password) {
       Logger.exceptionLogger({ route: 'register', message: 'name, email, and password are required'})
+      metrics.trackAuthAttempts(false)
       return res.status(400).json({ message: 'name, email, and password are required' });
     }
     const user = await DB.addUser({ name, email, password, roles: [{ role: Role.Diner }] });
@@ -133,7 +112,11 @@ authRouter.put(
   asyncHandler(async (req, res) => {
     metrics.incrementRequests("PUT")
     Logger.httpLogger(req, res)
-    chaos(req, res)
+    if (enableChaos) {
+      metrics.trackAuthAttempts(false)
+      Logger.exceptionLogger({ route: 'login', messaeg: 'chaos' })
+      return res.status(401).json({ message: 'chaos' })
+    }
     try {
       const { email, password } = req.body
       const user = await DB.getUser(email, password);
@@ -156,7 +139,6 @@ authRouter.delete(
   asyncHandler(async (req, res) => {
     metrics.incrementRequests("DELETE")
     Logger.httpLogger(req, res)
-    chaos(req, res)
     clearAuth(req);
     metrics.removeActiveUser(req.user.id)
     res.json({ message: 'logout successful' });
@@ -170,7 +152,6 @@ authRouter.put(
   asyncHandler(async (req, res) => {
     metrics.incrementRequests("PUT")
     Logger.httpLogger(req, res)
-    chaos(req, res)
     const { email, password } = req.body;
     const userId = Number(req.params.userId);
     const user = req.user;

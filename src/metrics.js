@@ -43,7 +43,7 @@ class Metrics {
             this.sendMetrics('authMetric', 'auth_failed', this.authAttempts.failed);
 
             this.sendMetrics('userMetric', 'active_users', this.activeUsers.size);
-        }, rate);
+        }, rate).unref()
     }
 
     trackAuthAttempts(success) {
@@ -51,6 +51,13 @@ class Metrics {
             this.authAttempts.successful++;
         } else {
             this.authAttempts.failed++;
+        }
+    }
+
+    stopSendingMetrics() {
+        if (this.intervalId) {
+            clearInterval(this.intervalId)
+            this.intervalId = null
         }
     }
 

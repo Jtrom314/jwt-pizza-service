@@ -51,6 +51,10 @@ describe('Diner User Tests', () => {
         const franchiseRes = await request(app).get('/api/franchise')
         expect(franchiseRes.status).toBe(200)
     })
+
+    afterEach(() => {
+        metrics.stopSendingMetrics()
+    })
 })
 
 
@@ -240,6 +244,10 @@ describe('Admin User Tests', () => {
         const franchisedRes = await request(app).get(`/api/franchise/${adminId}`).set('Authorization', `Bearer ${adminAuthToken}`)
         expect(franchisedRes.status).toBe(200)
     })
+
+    afterEach(() => {
+        metrics.stopSendingMetrics()
+    })
 })
 
 describe('Metric Tests', () => {
@@ -357,6 +365,7 @@ describe('Metric Tests', () => {
     });
 
     afterEach(() => {
+        metrics.stopSendingMetrics()
         global.fetch.mockRestore();
         jest.clearAllTimers(); // Clear all timers
     });
