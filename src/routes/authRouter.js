@@ -71,20 +71,20 @@ authRouter.authenticateToken = (req, res, next) => {
   next();
 };
 
-let enableChaos = false
+// let enableChaos = false
 
 
-authRouter.put(
-  '/chaos/:state',
-  authRouter.authenticateToken,
-  asyncHandler(async (req, res) => {
-    if (!req.user.isRole(Role.Admin)) {
-      res.status(404).json({message: 'C'})
-    }
-    enableChaos = (req.params.state === 'true');
-    res.json({ chaos: enableChaos });
-  })
-);
+// authRouter.put(
+//   '/chaos/:state',
+//   authRouter.authenticateToken,
+//   asyncHandler(async (req, res) => {
+//     if (!req.user.isRole(Role.Admin)) {
+//       res.status(404).json({message: 'C'})
+//     }
+//     enableChaos = (req.params.state === 'true');
+//     res.json({ chaos: enableChaos });
+//   })
+// );
 
 // register
 authRouter.post(
@@ -112,11 +112,11 @@ authRouter.put(
   asyncHandler(async (req, res) => {
     metrics.incrementRequests("PUT")
     Logger.httpLogger(req, res)
-    if (enableChaos) {
-      metrics.trackAuthAttempts(false)
-      Logger.exceptionLogger({ route: 'login', messaeg: 'chaos' })
-      return res.status(401).json({ message: 'chaos' })
-    }
+    // if (enableChaos) {
+    //   metrics.trackAuthAttempts(false)
+    //   Logger.exceptionLogger({ route: 'login', messaeg: 'chaos' })
+    //   return res.status(401).json({ message: 'chaos' })
+    // }
     try {
       const { email, password } = req.body
       const user = await DB.getUser(email, password);
