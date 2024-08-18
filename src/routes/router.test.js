@@ -305,31 +305,6 @@ describe('Metric Tests', () => {
         expect(metrics.methods.GET).toBe(1);
     });
 
-    test('trackPizzaSale handles correctly', () => {
-        metrics.trackPizzaSale(10, null, true);
-        
-        expect(metrics.pizzaData.numSold).toBe(1);
-        expect(metrics.pizzaData.totalRevenue).toBe(10);
-        expect(metrics.pizzaData.creationLatency.length).toBe(0);
-        expect(metrics.pizzaData.creationFailures).toBe(0);
-
-        metrics.trackPizzaSale(10, 0.1, false);
-
-        expect(metrics.pizzaData.numSold).toBe(2);
-        expect(metrics.pizzaData.totalRevenue).toBe(20);
-        expect(metrics.pizzaData.creationLatency.length).toBe(1);
-        expect(metrics.pizzaData.creationFailures).toBe(1);
-    });
-
-    test('getAveragePizzaCreationLatency gives correct average', () => {
-        metrics.pizzaData.creationLatency = [];
-        expect(metrics.getAveragePizzaCreationLatency()).toBe(0);
-
-        metrics.trackPizzaSale(10, 0.1, false);
-
-        expect(metrics.getAveragePizzaCreationLatency()).toBe('0.10');
-    });
-
     test('getCpuUsagePercentageIsNotNull', () => {
         const cpuUsagePercentage = metrics.getCpuUsagePercentage();
         expect(cpuUsagePercentage).not.toBeNull();

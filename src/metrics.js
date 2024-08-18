@@ -76,15 +76,20 @@ class Metrics {
         }
     }
 
-    trackPizzaSale(price, latency, success) {
-        this.pizzaData.numSold++;
-        this.pizzaData.totalRevenue += price;
-        if (latency !== null) {
-            this.pizzaData.creationLatency.push(latency);
-        }
-        if (!success) {
-            this.pizzaData.creationFailures++;
-        }
+    orderFailure() {
+        this.pizzaData.creationFailures++
+    }
+
+    reportLatency(latency) {
+        this.pizzaData.creationLatency.push(latency)
+    }
+
+    reportPrice(price) {
+        this.pizzaData.totalRevenue += price
+    }
+
+    reportNumSold(numSold) {
+        this.pizzaData.numSold += numSold
     }
 
     getAveragePizzaCreationLatency() {

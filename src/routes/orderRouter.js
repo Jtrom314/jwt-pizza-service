@@ -88,31 +88,34 @@ orderRouter.post(
     metrics.incrementRequests("POST")
     Logger.httpLogger(req, res)
 
-    const startTime = Date.now()
-    let success = false
-
+    
     const orderReq = req.body;
     const order = await DB.addDinerOrder(req.user, orderReq);
+
+
+    const startTime = Date.now()
     const r = await fetch(`${config.factory.url}/api/order`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', authorization: `Bearer ${config.factory.apiKey}` },
       body: JSON.stringify({ diner: { id: req.user.id, name: req.user.name, email: req.user.email }, order }),
     });
     const j = await r.json();
-    if (r.ok) {
-      const endTime = Date.now();
-      const latency = endTime - startTime;
-      const price = orderReq.items.reduce((total, item) => total + item.price, 0);
-      success = true;
 
-      metrics.trackPizzaSale(price, latency, success);
+    const endTime = Date.now();
+    const latency = endTime - startTime;
+    const price = orderReq.items.reduce((total, item) => total + item.price, 0);
+    const numSold = orderReq.items.length
+
+
+    if (r.ok) {
+      metrics.reportLatency(latency)
+      metrics.reportPrice(price)
+      metrics.reportNumSold(numSold)
       Logger.factoryLogger({ order, response: j })
       res.send({ order, jwt: j.jwt, reportUrl: j.reportUrl });
     } else {
+      metrics.orderFailure()
       Logger.exceptionLogger({ route: 'createOrder', message: 'Failed to fulfill order at factory', reportUrl: j.reportUrl })
-      const endTime = Date.now();
-      const latency = endTime - startTime;
-      metrics.trackPizzaSale(0, latency, success)
       res.status(500).send({ message: 'Failed to fulfill order at factory', reportUrl: j.reportUrl });
     }
   })
