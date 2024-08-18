@@ -64,23 +64,23 @@ function authenticated_order() {
 
     if [ "$token" != "null" ]; then
       curl -s -X POST "$host/api/order" -H 'Content-Type: application/json' -d '{"franchiseId": 1, "storeId": 1, "items": [{ "menuId": 1, "description": "Veggie", "price": 0.05 }]}' -H "Authorization: Bearer $token"
-      sleep 20
+      sleep 5
       curl -s -X DELETE "$host/api/auth" -H "Authorization: Bearer $token"
     fi
 
-    sleep 30
+    sleep 5
   done
 }
 
 # Trigger login_auth_chaos once
-login_auth_chaos
-sleep 5
+# login_auth_chaos
+# sleep 5
 # Handle script interruption to clean up background processes
 trap "kill 0" EXIT
 
-get_menu &
-bad_auth &
-authenticated_order &
-good_auth &
+# get_menu &
+# bad_auth &
+authenticated_order
+# good_auth &
 
 wait
